@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	in, err := readInput()
+	in, err := readInput(os.Args[1:], os.Stdin)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "md:", err)
 		os.Exit(1)
@@ -26,13 +26,13 @@ func main() {
 
 // readInput returns the Markdown to render. If a file is passed as the first
 // argument it is read from disk, otherwise the input is read from stdin.
-func readInput() ([]byte, error) {
-	if len(os.Args) > 1 {
+func readInput(args []string, stdin *os.File) ([]byte, error) {
+	if len(args) > 0 {
 		//nolint:gosec
-		return os.ReadFile(os.Args[1])
+		return os.ReadFile(args[0])
 	}
 
-	stat, err := os.Stdin.Stat()
+	stat, err := stdin.Stat()
 	if err != nil {
 		return nil, err
 	}
@@ -41,5 +41,5 @@ func readInput() ([]byte, error) {
 		return nil, fmt.Errorf("no input: pass a file as argument or pipe text via stdin")
 	}
 
-	return io.ReadAll(os.Stdin)
+	return io.ReadAll(stdin)
 }
