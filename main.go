@@ -15,7 +15,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	out, err := glamour.RenderWithEnvironmentConfig(string(in))
+	wordWrap := 80
+	if w := os.Getenv("MD_WORD_WRAP"); w != "" {
+		_, err := fmt.Sscanf(w, "%d", &wordWrap)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "md: invalid MD_WORD_WRAP value:", w)
+			os.Exit(1)
+		}
+	}
+
+	r, err := glamour.NewTermRenderer(
+		glamour.WithWordWrap(wordWrap),
+		glamour.WithEnvironmentConfig(),
+	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "md:", err)
+		os.Exit(1)
+	}
+
+	out, err := r.Render(string(in))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "md:", err)
 		os.Exit(1)
