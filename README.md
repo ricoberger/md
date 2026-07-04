@@ -16,7 +16,7 @@ Check the [releases](https://github.com/ricoberger/md/releases) page for the
 full list of pre-built binaries.
 
 1. Download the release for your os/arch
-2. Unzip to archive to get the `md` binary
+2. Unzip the archive to get the `md` binary
 3. Add the `md` binary to your `PATH`
 
 ### Source
