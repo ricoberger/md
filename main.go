@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"charm.land/glamour/v2"
+	adfmarkdown "github.com/ajbeck/adf-to-markdown"
 )
 
 func main() {
@@ -15,12 +16,32 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := run(in, os.Stdout); err != nil {
+		fmt.Fprintln(os.Stderr, "md:", err)
+		os.Exit(1)
+	}
+}
+
+// run converts and renders the given Markdown according to the MD_ADF, MD_RAW
+// and MD_WORD_WRAP environment variables, writing the result to out.
+func run(in []byte, out io.Writer) error {
+	if os.Getenv("MD_ADF") == "true" {
+		var err error
+		in, err = adfToMarkdown(in)
+		if err != nil {
+			return err
+		}
+	}
+
+	if os.Getenv("MD_RAW") == "true" {
+		fmt.Fprint(out, string(in))
+		return nil
+	}
+
 	wordWrap := 80
 	if w := os.Getenv("MD_WORD_WRAP"); w != "" {
-		_, err := fmt.Sscanf(w, "%d", &wordWrap)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "md: invalid MD_WORD_WRAP value:", w)
-			os.Exit(1)
+		if _, err := fmt.Sscanf(w, "%d", &wordWrap); err != nil {
+			return fmt.Errorf("invalid MD_WORD_WRAP value: %s", w)
 		}
 	}
 
@@ -29,17 +50,17 @@ func main() {
 		glamour.WithEnvironmentConfig(),
 	)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "md:", err)
-		os.Exit(1)
+		return err
 	}
 
-	out, err := r.Render(string(in))
+	rendered, err := r.Render(string(in))
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "md:", err)
-		os.Exit(1)
+		return err
 	}
 
-	fmt.Print(out)
+	fmt.Fprint(out, rendered)
+
+	return nil
 }
 
 // readInput returns the Markdown to render. If a file is passed as the first
@@ -60,4 +81,16 @@ func readInput(args []string, stdin *os.File) ([]byte, error) {
 	}
 
 	return io.ReadAll(stdin)
+}
+
+// adfToMarkdown converts the given ADF document to Markdown, using the
+// github.com/ajbeck/adf-to-markdown package. It returns the converted Markdown
+// or an error if the conversion fails.
+func adfToMarkdown(adf []byte) ([]byte, error) {
+	md, err := adfmarkdown.UnmarshalADF(adf)
+	if err != nil {
+		return nil, err
+	}
+
+	return md, nil
 }
