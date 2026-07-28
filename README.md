@@ -8,6 +8,12 @@ It exists because Glow didn't work well within the
 colors. `md` honors the `GLAMOUR_STYLE` environment variable and works with the
 [Catppuccin Glamour theme](https://github.com/catppuccin/glamour).
 
+- `MD_WORD_WRAP`: Set the word wrap width. Defaults to `80`.
+- `MD_ADF`: Set to `true` if the input is in Atlassian Document Format (ADF).
+  Defaults to `false`.
+- `MD_RAW`: Set to `true` to print the raw input instead of rendering it.
+  Defaults to `false`.
+
 ## Install
 
 ### Releases
@@ -22,7 +28,7 @@ full list of pre-built binaries.
 ### Source
 
 ```sh
-go install github.com/ricoberger/md@latest
+GOEXPERIMENT=jsonv2 go install github.com/ricoberger/md@latest
 ```
 
 ## Development
@@ -30,6 +36,6 @@ go install github.com/ricoberger/md@latest
 To build and run the binary the following commands can be used:
 
 ```sh
-go build -o ./bin/md .
+GOEXPERIMENT=jsonv2 go build -o ./bin/md .
 ./bin/md
 ```

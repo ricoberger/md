@@ -44,7 +44,7 @@ jobs:
 
       - name: Build
         run: |
-          GOOS="${{ matrix.platform.os }}" GOARCH="${{ matrix.platform.arch }}" go build -o ./bin/md .
+          GOOS="${{ matrix.platform.os }}" GOARCH="${{ matrix.platform.arch }}" GOEXPERIMENT=jsonv2 go build -o ./bin/md .
 
           cd ./bin
           tar -czf md-${{ matrix.platform.os }}-${{ matrix.platform.arch }}.tar.gz md
