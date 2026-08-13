@@ -14,6 +14,13 @@ colors. `md` honors the `GLAMOUR_STYLE` environment variable and works with the
 - `MD_RAW`: Set to `true` to print the raw input instead of rendering it.
   Defaults to `false`.
 
+A leading YAML front matter block (delimited by `---`) is stripped before
+rendering, so metadata such as tags is not printed. When `MD_RAW` is set the
+input is printed verbatim, including any front matter.
+
+- `MD_ENABLE_FRONT_MATTER`: Set to `true` to keep (render) the YAML front
+  matter instead of stripping it. Defaults to `false`.
+
 ## Install
 
 ### Releases
