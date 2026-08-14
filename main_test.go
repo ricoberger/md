@@ -67,6 +67,53 @@ func TestRun(t *testing.T) {
 		}
 	})
 
+	t.Run("TestRunFrontMatter", func(t *testing.T) {
+		fmInput := []byte("---\ntags: [daily-notes]\n---\n\n# Heading\n\nSome text.\n")
+
+		var out bytes.Buffer
+		if err := run(fmInput, &out); err != nil {
+			t.Fatalf("run returned error: %v", err)
+		}
+
+		if strings.Contains(out.String(), "daily-notes") {
+			t.Errorf("run output %q still contains front matter", out.String())
+		}
+		if !strings.Contains(out.String(), "Heading") {
+			t.Errorf("run output %q does not contain heading text", out.String())
+		}
+	})
+
+	t.Run("TestRunFrontMatterRaw", func(t *testing.T) {
+		t.Setenv("MD_RAW", "true")
+		fmInput := []byte("---\ntags: [daily-notes]\n---\n\n# Heading\n")
+
+		var out bytes.Buffer
+		if err := run(fmInput, &out); err != nil {
+			t.Fatalf("run returned error: %v", err)
+		}
+
+		// MD_RAW prints the input verbatim, including any front matter.
+		if out.String() != string(fmInput) {
+			t.Errorf("run = %q, want %q", out.String(), string(fmInput))
+		}
+	})
+
+	t.Run("TestRunFrontMatterEnabled", func(t *testing.T) {
+		t.Setenv("MD_ENABLE_FRONT_MATTER", "true")
+		fmInput := []byte("---\ntags: [daily-notes]\n---\n\n# Heading\n")
+
+		var out bytes.Buffer
+		if err := run(fmInput, &out); err != nil {
+			t.Fatalf("run returned error: %v", err)
+		}
+
+		// With MD_ENABLE_FRONT_MATTER the front matter is rendered instead of
+		// stripped, so its content still appears in the output.
+		if !strings.Contains(out.String(), "daily-notes") {
+			t.Errorf("run output %q does not contain front matter", out.String())
+		}
+	})
+
 	t.Run("TestRunADF", func(t *testing.T) {
 		t.Setenv("MD_ADF", "true")
 		t.Setenv("MD_RAW", "true")
@@ -94,6 +141,54 @@ func TestRun(t *testing.T) {
 			t.Fatal("expected error for invalid ADF, got nil")
 		}
 	})
+}
+
+func TestStripFrontMatter(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "strips front matter",
+			in:   "---\ntags: [daily-notes]\n---\n\n# Heading\n",
+			want: "# Heading\n",
+		},
+		{
+			name: "strips front matter with closing dots",
+			in:   "---\ntags: [a]\n...\n# Heading\n",
+			want: "# Heading\n",
+		},
+		{
+			name: "no front matter is unchanged",
+			in:   "# Heading\n\nSome text.\n",
+			want: "# Heading\n\nSome text.\n",
+		},
+		{
+			name: "horizontal rule is not treated as front matter",
+			in:   "Some text.\n\n---\n\nMore text.\n",
+			want: "Some text.\n\n---\n\nMore text.\n",
+		},
+		{
+			name: "unterminated front matter is unchanged",
+			in:   "---\ntags: [a]\n\n# Heading\n",
+			want: "---\ntags: [a]\n\n# Heading\n",
+		},
+		{
+			name: "preserves horizontal rules in body",
+			in:   "---\ntags: [a]\n---\n\n# Heading\n\n---\n\nMore.\n",
+			want: "# Heading\n\n---\n\nMore.\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := stripFrontMatter([]byte(tt.in))
+			if string(got) != tt.want {
+				t.Errorf("stripFrontMatter = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestReadInput(t *testing.T) {

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -36,6 +38,10 @@ func run(in []byte, out io.Writer) error {
 	if os.Getenv("MD_RAW") == "true" {
 		fmt.Fprint(out, string(in))
 		return nil
+	}
+
+	if os.Getenv("MD_ENABLE_FRONT_MATTER") != "true" {
+		in = stripFrontMatter(in)
 	}
 
 	wordWrap := 80
@@ -93,4 +99,46 @@ func adfToMarkdown(adf []byte) ([]byte, error) {
 	}
 
 	return md, nil
+}
+
+// stripFrontMatter removes a leading YAML front matter block from the given
+// input. A front matter block starts with a line containing only "---" at the
+// very beginning of the input and ends at the next line containing only "---"
+// (or "..."). If no valid front matter block is found the input is returned
+// unchanged.
+func stripFrontMatter(in []byte) []byte {
+	// The input must start with the "---" delimiter, optionally preceded by a
+	// UTF-8 byte order mark.
+	rest := bytes.TrimPrefix(in, []byte{0xEF, 0xBB, 0xBF})
+	if !bytes.HasPrefix(rest, []byte("---\n")) && !bytes.HasPrefix(rest, []byte("---\r\n")) {
+		return in
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(rest))
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+
+	// Skip the opening delimiter.
+	if !scanner.Scan() {
+		return in
+	}
+
+	var body bytes.Buffer
+	closed := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !closed {
+			if line == "---" || line == "..." {
+				closed = true
+			}
+			continue
+		}
+		body.WriteString(line)
+		body.WriteByte('\n')
+	}
+	if scanner.Err() != nil || !closed {
+		return in
+	}
+
+	// Trim leading blank lines left after the front matter block.
+	return bytes.TrimLeft(body.Bytes(), "\n")
 }
