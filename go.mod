@@ -4,7 +4,7 @@ go 1.27.2
 
 require (
 	charm.land/glamour/v2 v2.0.1
-	github.com/ajbeck/adf-to-markdown v1.1.1
+	github.com/ajbeck/adf-to-markdown v1.1.2
 )
 
 require (
